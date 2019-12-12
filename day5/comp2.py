@@ -21,12 +21,12 @@ class int_computer ():
             instruction_data["opcode"] = instruction
         else:
             # opcode two far-most right digits
-            instruction_data["opcode"] = int(str(instruction)[len(str(instruction))-2:])
+            instruction_data["opcode"] = int(str(instruction)[-2:])
             if (instruction_data["opcode"] == 99):
                 print("PROGRAM_EXIT")
                 exit()
             # get mode from the remaining digits
-            instruction_data["mode"] = int(str(instruction)[:len(str(instruction))-2], 2)
+            instruction_data["mode"] = int(str(instruction)[:-2], 2)
         
         return instruction_data
 
