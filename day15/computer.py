@@ -1,3 +1,5 @@
+NORTH, SOUTH, WEST, EAST = 1, 2, 3, 4 
+
 class int_computer:
 
     def __init__(self, program):
@@ -6,6 +8,21 @@ class int_computer:
         self.relative_base = 0
         self.halting = False
         self.this_instruction = None
+
+        # robot specific properties
+        self.input = None
+        self.output = None
+
+        self.open = set()
+        self.wall = set()
+        self.x = 0
+        self.y = 0
+        self.directions = {
+            NORTH: (0, 1),
+            SOUTH: (0, -1),
+            EAST: (1, 0),
+            WEST: (-1, 0)
+        }
 
     def instruction_parse(self, instruction):
         """takes int (not-string) instuction returns dictionary with keys "mode" and "opcode" """
@@ -98,11 +115,13 @@ class int_computer:
             elif (this_instruction["opcode"] == 3):
                 # takes input and saves at position stated in parameter
 
+                self.decide_next_move(self.output)
+                user_in = self.input
 
                 if '2' in this_instruction['mode']:
-                    self.memory[self.relative_base + self.memory[self.instruction_ptr+1]] = int(input())
+                    self.memory[self.relative_base + self.memory[self.instruction_ptr+1]] = user_in
                 else:
-                    self.memory[self.memory[self.instruction_ptr+1]] = int(input())
+                    self.memory[self.memory[self.instruction_ptr+1]] = user_in
 
                 offset = 2
 
@@ -110,7 +129,7 @@ class int_computer:
                 # outputs value at position
                 p1 = self.setupParameters(1)                
                 print(p1)
-
+                self.output = p1
                 offset = 2
             
             elif (this_instruction["opcode"] == 5):
@@ -164,11 +183,54 @@ class int_computer:
             # increment based on number of parameters
             self.instruction_ptr += offset
 
+    def apply_direction(self, direct_tuple):
+        self.x += direct_tuple[0]
+        self.y += direct_tuple[1]
+        return (self.x, self.y)
 
-problem_input = ""
-with open("real", "r") as f:
-    problem_input = f.read()
+    def test_direction(self, direct_tuple):
+        rx = self.x
+        ry = self.y
+        rx += direct_tuple[0]
+        ry += direct_tuple[1]
+        return (rx, ry)
 
-#problem_input = "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99"
-newPC = int_computer(problem_input)
-newPC.run()
+    def decide_next_move(self, response=None):
+        if response == None:
+           self.input = NORTH
+        elif response == 1:
+            # move was successful
+            open_place = self.apply_direction(self.directions[self.input])
+            self.open.add(open_place)
+            print(f"successfully moved to {open_place}")
+
+            for key, vector in self.directions.items():
+                if not (self.test_direction(vector) in self.open or self.test_direction(vector) in self.wall):
+                    self.input = key
+                    break
+
+
+        elif response == 2:
+            # oxygen system found!
+            # TODO: calculate shortest distance
+            print(f"Oxygen tank found!")
+            print(self.open)
+            exit()
+        
+        elif response == 0:
+            # okay go to first not visited position
+            wall_place = self.test_direction(self.directions[self.input])
+            self.wall.add(wall_place)
+            print(f"wall hit at {wall_place}")
+            for key, vector in self.directions.items():
+                if not (self.test_direction(vector) in self.wall):
+                    self.input = key
+                    break
+            # okay well in this case backtrack!
+            self.input = self.reverse_direction(self.input)
+
+    def reverse_direction(self, dir):
+        if dir == NORTH: return SOUTH
+        elif dir == SOUTH: return NORTH
+        elif dir == WEST: return EAST
+        else: return WEST
